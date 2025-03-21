@@ -1,0 +1,43 @@
+/* 
+  Localizable.strings
+  Lemon App
+  English Localization
+*/
+
+// LemonView
+"今天你榨檸檬了嗎？" = "Did you squeeze lemons today?";
+"😀擁有檸檬汁（杯）" = "😀Current Lemon Juice (Cups)";
+"😭今日被偷（杯）" = "😭 Stolen Today (Cups)";
+"檸檬小偷👻來了！" = "Lemon Thief 👻 Alert!";
+"你被偷了%d杯檸檬汁" = "You lost %d cups of lemon juice";
+
+// StatsView
+"統計" = "Statistics";
+"統計數據" = "Statistics Data";
+"連續榨檸檬（天）" = "Consecutive Days";
+"最長紀錄：%d天" = "Longest Streak: %d days";
+"總共榨檸檬（杯）" = "Total Squeezed (Cups)";
+"總共被偷（杯）" = "Total Stolen (Cups)";
+"榨檸檬記錄" = "Squeezing History";
+"較少" = "Less";
+"較多" = "More";
+"榨檸檬：%d 杯" = "Squeezed: %d cups";
+"被偷：%d 杯" = "Stolen: %d cups";
+"yyyy年MM月dd日" = "MMM dd, yyyy";
+
+// SettingsView
+"設定" = "Settings";
+"震動效果" = "Vibration";
+"點擊音效" = "Sound Effects";
+"自動榨檸檬（即將推出）" = "Auto Squeeze (Coming Soon)";
+"深色模式（即將推出）" = "Dark Mode (Coming Soon)";
+"版本 %@" = "Version %@";
+
+// Weekdays
+"日" = "Sun";
+"一" = "Mon";
+"二" = "Tue";
+"三" = "Wed";
+"四" = "Thu";
+"五" = "Fri";
+"六" = "Sat";
