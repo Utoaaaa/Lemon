@@ -69,8 +69,8 @@ struct ThiefEvent {
     static func random() -> ThiefEvent {
         return ThiefEvent(
             triggerCount: Int.random(in: 1...10),
-            stealProbability: Double.random(in: 0.2...0.7),
-            stealPercentage: Double.random(in: 0.2...0.7)
+            stealProbability: Double.random(in: 0.25...0.75),
+            stealPercentage: Double.random(in: 0.25...0.75)
         )
     }
 }

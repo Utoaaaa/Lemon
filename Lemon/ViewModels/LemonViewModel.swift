@@ -164,12 +164,20 @@ class LemonViewModel: ObservableObject {
     // MARK: - 音效和震動
     
     private func setupAudio() {
-        guard let soundURL = Bundle.main.url(forResource: "pop sound", withExtension: "mp3") else { return }
+        guard let soundURL = Bundle.main.url(forResource: "pop sound", withExtension: "mp3") else {
+            print("無法找到音效文件")
+            return
+        }
+        
         do {
+            // 使用最簡單的音頻配置
+            try AVAudioSession.sharedInstance().setCategory(.ambient)
+            
+            // 初始化音頻播放器
             audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
             audioPlayer?.prepareToPlay()
         } catch {
-            print("音效載入失敗: \(error)")
+            print("音效初始化失敗: \(error.localizedDescription)")
         }
     }
     
@@ -177,18 +185,42 @@ class LemonViewModel: ObservableObject {
         audioPlayer?.play()
     }
     
+    deinit {
+        audioPlayer?.stop()
+    }
+    
     private func setupHaptics() {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
+        
         do {
             hapticEngine = try CHHapticEngine()
             try hapticEngine?.start()
+            
+            // 添加重啟回調
+            hapticEngine?.resetHandler = { [weak self] in
+                print("重啟震動引擎")
+                do {
+                    try self?.hapticEngine?.start()
+                } catch {
+                    print("重啟震動引擎失敗: \(error.localizedDescription)")
+                }
+            }
+            
+            // 停止回調
+            hapticEngine?.stoppedHandler = { reason in
+                print("震動引擎停止，原因: \(reason)")
+            }
+            
         } catch {
-            print("震動引擎初始化失敗: \(error)")
+            print("震動引擎初始化失敗: \(error.localizedDescription)")
         }
     }
     
     private func triggerHapticFeedback() {
+        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
+        
         let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.prepare()
         generator.impactOccurred()
     }
 }

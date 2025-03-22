@@ -14,7 +14,7 @@ struct StatsView: View {
             VStack(spacing: 30) {
                 Text("統計數據")
                     .font(.system(size: 25, weight: .bold))
-                    .padding(.top, 90)
+                    .padding(.top, hasNotch() ? 90 : 120)
                     .padding(.leading, 20)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 
@@ -118,7 +118,9 @@ struct ActivityGridView: View {
     @State private var currentWeekdayIndex: Int = 0
     @State private var selectedDay: Int? = nil
     @State private var showingDayInfo: Bool = false
+    @State private var showingColorInfo: Bool = false
     @State private var selectedDayInfo: (date: Date, count: Int, stolen: Int) = (Date(), 0, 0)
+    @State private var selectedColorInfo: Int = 0
     
     // 計算今天是星期幾 (0 = 星期日, 1 = 星期一, ..., 6 = 星期六)
     private var currentWeekday: Int {
@@ -132,13 +134,11 @@ struct ActivityGridView: View {
         if count == 0 {
             return Color.gray.opacity(0.2)
         } else if count < 1000 {
-            return Color.green.opacity(0.3)
+            return Color.green.opacity(0.4)
         } else if count < 2000 {
-            return Color.green.opacity(0.5)
+            return Color.green.opacity(0.6)
         } else if count < 3000 {
-            return Color.green.opacity(0.7)
-        } else if count < 4000 {
-            return Color.green.opacity(0.9)
+            return Color.green.opacity(0.8)
         } else {
             return Color.green
         }
@@ -148,6 +148,20 @@ struct ActivityGridView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = NSLocalizedString("yyyy年MM月dd日", comment: "")
         return formatter.string(from: date)
+    }
+    
+    private func getCountRangeText(for count: Int) -> String {
+        if count == 0 {
+            return NSLocalizedString("0 杯被偷", comment: "")
+        } else if count == 999 {
+            return NSLocalizedString("1-999 杯被偷", comment: "")
+        } else if count == 1999 {
+            return NSLocalizedString("1000-1999 杯被偷", comment: "")
+        } else if count == 2999 {
+            return NSLocalizedString("2000-2999 杯被偷", comment: "")
+        } else {
+            return NSLocalizedString("3000+ 杯被偷", comment: "")
+        }
     }
     
     var body: some View {
@@ -179,16 +193,19 @@ struct ActivityGridView: View {
                                     
                                     // 獲取活動數據
                                     let dataIndex = dayOffset
-                                    let activityCount = dataIndex < activityData.count ? activityData[dataIndex] : 0
-                                    let _ = dataIndex < stolenData.count ? stolenData[dataIndex] : 0
+                                    let stolenCount = if weekIndex == 0 && dayIndex == currentWeekday {
+                                        stats.todayStolenCount
+                                    } else {
+                                        dataIndex < stolenData.count ? stolenData[dataIndex] : 0
+                                    }
                                     
                                     Rectangle()
-                                        .fill(getActivityColor(count: activityCount))
+                                        .fill(getActivityColor(count: stolenCount))
                                         .frame(width: 15, height: 15)
                                         .cornerRadius(3)
                                         .overlay(
-                                            // 高亮今天
-                                            weekIndex == 0 && dayIndex == currentWeekday ? 
+                                            // 高亮選中的格子
+                                            showingDayInfo && selectedDay == dayOffset ? 
                                                 RoundedRectangle(cornerRadius: 3)
                                                     .stroke(Color.orange, lineWidth: 2) : nil
                                         )
@@ -209,17 +226,20 @@ struct ActivityGridView: View {
                                                 } else {
                                                     // 查找該日期的活動數據
                                                     let activity = stats.getActivity(for: selectedDate)
-                                                    let lemonCount = activity?.lemonCount ?? 0
-                                                    let stolenCount = activity?.stolenCount ?? 0
-                                                    
-                                                    // 如果是今天，使用當前數據
-                                                    if calendar.isDateInToday(selectedDate) {
-                                                        selectedDayInfo = (selectedDate, stats.todayLemonCount, stats.todayStolenCount)
+                                                    let lemonCount = if calendar.isDateInToday(selectedDate) {
+                                                        stats.todayLemonCount
                                                     } else {
-                                                        selectedDayInfo = (selectedDate, lemonCount, stolenCount)
+                                                        activity?.lemonCount ?? 0
+                                                    }
+                                                    let stolenCount = if calendar.isDateInToday(selectedDate) {
+                                                        stats.todayStolenCount
+                                                    } else {
+                                                        activity?.stolenCount ?? 0
                                                     }
                                                     
+                                                    selectedDayInfo = (selectedDate, lemonCount, stolenCount)
                                                     showingDayInfo = true
+                                                    showingColorInfo = false
                                                     selectedDay = dayOffset
                                                 }
                                             }
@@ -240,11 +260,27 @@ struct ActivityGridView: View {
                     .foregroundColor(.gray)
                     .padding(.trailing, 6)
                 
-                ForEach([0, 1000, 2000, 3000, 4000], id: \.self) { count in
+                ForEach([0, 999, 1999, 2999, 3999], id: \.self) { count in
                     Rectangle()
                         .fill(getActivityColor(count: count))
                         .frame(width: 15, height: 15)
                         .cornerRadius(3)
+                        .overlay(
+                            // 高亮選中的格子
+                            showingColorInfo && selectedColorInfo == count ? 
+                                RoundedRectangle(cornerRadius: 3)
+                                    .stroke(Color.orange, lineWidth: 2) : nil
+                        )
+                        .onTapGesture {
+                            if showingColorInfo && selectedColorInfo == count {
+                                showingColorInfo = false
+                            } else {
+                                selectedColorInfo = count
+                                showingColorInfo = true
+                                showingDayInfo = false
+                                selectedDay = nil
+                            }
+                        }
                 }
                 
                 Text("較多")
@@ -264,11 +300,6 @@ struct ActivityGridView: View {
                         .lineLimit(1)
                     
                     HStack {
-                        Text(String(format: NSLocalizedString("榨檸檬：%d 杯", comment: ""), selectedDayInfo.count))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Spacer()
                         Text(String(format: NSLocalizedString("被偷：%d 杯", comment: ""), selectedDayInfo.stolen))
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
@@ -276,6 +307,22 @@ struct ActivityGridView: View {
                     }
                     .font(.system(size: 12))
                     .foregroundColor(.gray)
+                }
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.9)))
+                .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 1)
+                .padding(.horizontal, 10)
+                .padding(.top, 5)
+                .transition(.opacity)
+            }
+            
+            // 顯示顏色說明的信息
+            if showingColorInfo {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(getCountRangeText(for: selectedColorInfo))
+                        .font(.system(size: 12, weight: .bold))
+                        .lineLimit(1)
                 }
                 .padding(8)
                 .frame(maxWidth: .infinity, alignment: .leading)
