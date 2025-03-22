@@ -113,21 +113,102 @@ struct StatsView: View {
 
 struct ActivityGridView: View {
     let stats: LemonStats
-    @State private var activityData: [Int] = Array(repeating: 0, count: 365)
-    @State private var stolenData: [Int] = Array(repeating: 0, count: 365)
-    @State private var currentWeekdayIndex: Int = 0
-    @State private var selectedDay: Int? = nil
+    @State private var activityData: [[Int]] = []  // 二維陣列，儲存活動數據
+    @State private var stolenData: [[Int]] = []    // 二維陣列，儲存被偷數據
+    @State private var selectedDay: (column: Int, row: Int)? = nil
     @State private var showingDayInfo: Bool = false
     @State private var showingColorInfo: Bool = false
     @State private var selectedDayInfo: (date: Date, count: Int, stolen: Int) = (Date(), 0, 0)
     @State private var selectedColorInfo: Int = 0
+    @State private var firstRecordWeekday: Int = 0  // 第一次記錄的星期幾
+    @State private var totalDays: Int = 0          // 記錄總天數
+    private let extraColumns = 26                   // 預設多生成一年的空格子
     
-    // 計算今天是星期幾 (0 = 星期日, 1 = 星期一, ..., 6 = 星期六)
-    private var currentWeekday: Int {
+    // 計算需要的列數
+    private var numberOfColumns: Int {
+        let requiredColumns = (totalDays + firstRecordWeekday + 6) / 7  // +6 確保向上取整
+        return requiredColumns + extraColumns  // 在需要的列數上額外加上一年的空格子
+    }
+    
+    private func initializeGrids() {
+        // 初始化二維陣列
+        activityData = Array(repeating: Array(repeating: 0, count: 7), count: numberOfColumns)
+        stolenData = Array(repeating: Array(repeating: 0, count: 7), count: numberOfColumns)
+    }
+    
+    private func ensureExtraColumn(at column: Int) {
+        // 如果接近當前數組大小，增加新的列
+        if column >= activityData.count - 5 {  // 當剩餘少於5列時增加新列
+            let newColumns = 26  // 每次增加一年的列數
+            activityData.append(contentsOf: Array(repeating: Array(repeating: 0, count: 7), count: newColumns))
+            stolenData.append(contentsOf: Array(repeating: Array(repeating: 0, count: 7), count: newColumns))
+        }
+    }
+    
+    private func calculatePosition(dayOffset: Int) -> (column: Int, row: Int)? {
+        let totalOffset = dayOffset + firstRecordWeekday
+        let column = totalOffset / 7
+        let row = totalOffset % 7
+        
+        // 檢查是否在有效範圍內
+        guard column >= 0, row >= 0, row < 7 else {
+            return nil
+        }
+        
+        // 確保有足夠的列
+        ensureExtraColumn(at: column)
+        
+        return (column: column, row: row)
+    }
+    
+    private func loadActivityData() {
         let calendar = Calendar.current
-        let today = Date()
-        // 轉換為 0-6 (星期日-星期六)
-        return calendar.component(.weekday, from: today) - 1
+        let today = calendar.startOfDay(for: Date())
+        
+        // 獲取並排序活動數據
+        let sortedActivities = stats.dailyActivities.sorted(by: { $0.date < $1.date })
+        
+        // 設置第一天的星期幾
+        if let firstActivity = sortedActivities.first {
+            firstRecordWeekday = calendar.component(.weekday, from: firstActivity.date) - 1
+            
+            // 計算總天數
+            if let days = calendar.dateComponents([.day], from: firstActivity.date, to: today).day {
+                totalDays = days + 1  // +1 包含今天
+            }
+            
+            // 初始化網格
+            initializeGrids()
+            
+            // 填充歷史數據
+            for activity in sortedActivities {
+                if let days = calendar.dateComponents([.day], from: firstActivity.date, to: activity.date).day {
+                    if let position = calculatePosition(dayOffset: days) {
+                        activityData[position.column][position.row] = activity.lemonCount
+                        stolenData[position.column][position.row] = activity.stolenCount
+                    }
+                }
+            }
+            
+            // 設置今天的數據
+            if let days = calendar.dateComponents([.day], from: firstActivity.date, to: today).day {
+                if let position = calculatePosition(dayOffset: days) {
+                    activityData[position.column][position.row] = stats.todayLemonCount
+                    stolenData[position.column][position.row] = stats.todayStolenCount
+                }
+            }
+        } else {
+            // 如果沒有歷史數據，從今天開始記錄
+            firstRecordWeekday = calendar.component(.weekday, from: today) - 1
+            totalDays = 0
+            initializeGrids()
+            
+            // 確保數組已經初始化且索引有效
+            if numberOfColumns > 0 {
+                activityData[0][firstRecordWeekday] = stats.todayLemonCount
+                stolenData[0][firstRecordWeekday] = stats.todayStolenCount
+            }
+        }
     }
     
     private func getActivityColor(count: Int) -> Color {
@@ -184,65 +265,20 @@ struct ActivityGridView: View {
                 // 活動網格
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 4) {
-                        // 生成 52 週的格子
-                        ForEach(0..<52, id: \.self) { weekIndex in
+                        ForEach(0..<activityData.count, id: \.self) { column in
                             VStack(spacing: 4) {
-                                ForEach(0..<7, id: \.self) { dayIndex in
-                                    // 計算日期偏移
-                                    let dayOffset = weekIndex * 7 + dayIndex
-                                    
-                                    // 獲取活動數據
-                                    let dataIndex = dayOffset
-                                    let stolenCount = if weekIndex == 0 && dayIndex == currentWeekday {
-                                        stats.todayStolenCount
-                                    } else {
-                                        dataIndex < stolenData.count ? stolenData[dataIndex] : 0
-                                    }
-                                    
+                                ForEach(0..<7, id: \.self) { row in
                                     Rectangle()
-                                        .fill(getActivityColor(count: stolenCount))
+                                        .fill(getActivityColor(count: getStolenCount(column: column, row: row)))
                                         .frame(width: 15, height: 15)
                                         .cornerRadius(3)
                                         .overlay(
-                                            // 高亮選中的格子
-                                            showingDayInfo && selectedDay == dayOffset ? 
+                                            showingDayInfo && selectedDay?.column == column && selectedDay?.row == row ? 
                                                 RoundedRectangle(cornerRadius: 3)
                                                     .stroke(Color.orange, lineWidth: 2) : nil
                                         )
                                         .onTapGesture {
-                                            // 計算選中日期
-                                            let calendar = Calendar.current
-                                            let today = calendar.startOfDay(for: Date())
-                                            
-                                            // 計算日期差異，考慮日期由上到下排列
-                                            // 今天是 weekIndex=0, dayIndex=currentWeekday
-                                            let dayDiff = weekIndex * 7 + (dayIndex - currentWeekday)
-                                            
-                                            if let selectedDate = calendar.date(byAdding: .day, value: dayDiff, to: today) {
-                                                // 如果點擊的是同一個格子，切換顯示狀態
-                                                if showingDayInfo && selectedDay == dayOffset {
-                                                    showingDayInfo = false
-                                                    selectedDay = nil
-                                                } else {
-                                                    // 查找該日期的活動數據
-                                                    let activity = stats.getActivity(for: selectedDate)
-                                                    let lemonCount = if calendar.isDateInToday(selectedDate) {
-                                                        stats.todayLemonCount
-                                                    } else {
-                                                        activity?.lemonCount ?? 0
-                                                    }
-                                                    let stolenCount = if calendar.isDateInToday(selectedDate) {
-                                                        stats.todayStolenCount
-                                                    } else {
-                                                        activity?.stolenCount ?? 0
-                                                    }
-                                                    
-                                                    selectedDayInfo = (selectedDate, lemonCount, stolenCount)
-                                                    showingDayInfo = true
-                                                    showingColorInfo = false
-                                                    selectedDay = dayOffset
-                                                }
-                                            }
+                                            handleDaySelection(column: column, row: row)
                                         }
                                 }
                             }
@@ -334,41 +370,36 @@ struct ActivityGridView: View {
             }
         }
         .onAppear {
-            // 獲取今天是星期幾，初始化時設置
-            currentWeekdayIndex = currentWeekday
-            
-            // 載入活動數據
             loadActivityData()
         }
     }
     
-    private func loadActivityData() {
-        // 清空數據
-        activityData = Array(repeating: 0, count: 365)
-        stolenData = Array(repeating: 0, count: 365)
-        
+    // 安全地獲取被偷數據
+    private func getStolenCount(column: Int, row: Int) -> Int {
+        guard column >= 0, column < stolenData.count,
+              row >= 0, row < stolenData[column].count else {
+            return 0
+        }
+        return stolenData[column][row]
+    }
+    
+    private func handleDaySelection(column: Int, row: Int) {
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
         
-        // 設置今天的數據
-        let todayIndex = currentWeekday
-        activityData[todayIndex] = stats.todayLemonCount
-        stolenData[todayIndex] = stats.todayStolenCount
-        
-        // 載入歷史數據
-        for activity in stats.dailyActivities {
-            // 計算與今天的日期差異
-            let components = calendar.dateComponents([.day], from: activity.date, to: today)
-            if let dayDiff = components.day, dayDiff >= 0 && dayDiff < 365 {
-                // 計算在數組中的索引
-                let activityWeekday = calendar.component(.weekday, from: activity.date) - 1
-                let weeksAgo = dayDiff / 7
-                let index = (weeksAgo * 7) + activityWeekday
-                
-                // 將數據填充到對應位置
-                if index < activityData.count {
-                    activityData[index] = activity.lemonCount
-                    stolenData[index] = activity.stolenCount
+        // 計算選中日期
+        if let firstActivity = stats.dailyActivities.sorted(by: { $0.date < $1.date }).first {
+            let dayOffset = column * 7 + row - firstRecordWeekday
+            if let selectedDate = calendar.date(byAdding: .day, value: dayOffset, to: firstActivity.date) {
+                // 如果點擊的是同一個格子，切換顯示狀態
+                if showingDayInfo && selectedDay?.column == column && selectedDay?.row == row {
+                    showingDayInfo = false
+                    selectedDay = nil
+                } else {
+                    let stolenCount = getStolenCount(column: column, row: row)
+                    selectedDayInfo = (selectedDate, 0, stolenCount)
+                    showingDayInfo = true
+                    showingColorInfo = false
+                    selectedDay = (column, row)
                 }
             }
         }

@@ -4,11 +4,8 @@ import AVFoundation
 // 添加檢測瀏海的工具
 extension View {
     func hasNotch() -> Bool {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first else {
-            return false
-        }
-        return window.safeAreaInsets.top > 20
+        let keyWindow = UIApplication.shared.windows.filter { $0.isKeyWindow }.first
+        return keyWindow?.safeAreaInsets.top ?? 0 > 20
     }
 }
 
