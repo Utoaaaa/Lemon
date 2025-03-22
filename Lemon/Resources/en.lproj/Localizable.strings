@@ -5,7 +5,7 @@
 */
 
 // LemonView
-"今天你榨檸檬了嗎？" = "Did you squeeze lemons today?";
+"今天你被偷了嗎？" = "Have you been stolen today??";
 "😀擁有檸檬汁（杯）" = "😀Current Lemon Juice (Cups)";
 "😭今日被偷（杯）" = "😭 Stolen Today (Cups)";
 "檸檬小偷👻來了！" = "Lemon Thief 👻 Alert!";
@@ -14,7 +14,7 @@
 // StatsView
 "統計" = "Statistics";
 "統計數據" = "Statistics Data";
-"連續榨檸檬（天）" = "Consecutive Days";
+"連續被偷（天）" = "Consecutive Days";
 "最長紀錄：%d天" = "Longest Streak: %d days";
 "總共榨檸檬（杯）" = "Total Squeezed (Cups)";
 "總共被偷（杯）" = "Total Stolen (Cups)";
@@ -23,12 +23,19 @@
 "較多" = "More";
 "榨檸檬：%d 杯" = "Squeezed: %d cups";
 "被偷：%d 杯" = "Stolen: %d cups";
-"yyyy年MM月dd日" = "MMM dd, yyyy";
+"%d 杯被偷" = "%d cups stolen";
+"0 杯被偷" = "0 cups stolen";
+"1-999 杯被偷" = "1-999 cups stolen";
+"1000-1999 杯被偷" = "1000-1999 cups stolen";
+"2000-2999 杯被偷" = "2000-2999 cups stolen";
+"3000+ 杯被偷" = "3000+ cups stolen";
+"yyyy年MM月dd日" = "MM, dd, yyyy";
 
 // SettingsView
 "設定" = "Settings";
 "震動效果" = "Vibration";
 "點擊音效" = "Sound Effects";
+"掉落效果" = "Drop Effect";
 "自動榨檸檬（即將推出）" = "Auto Squeeze (Coming Soon)";
 "深色模式（即將推出）" = "Dark Mode (Coming Soon)";
 "版本 %@" = "Version %@";
@@ -41,3 +48,8 @@
 "四" = "Thu";
 "五" = "Fri";
 "六" = "Sat";
+
+// Game Tips
+"遊戲提示" = "Game Tips";
+"點擊兩下可榨一杯檸檬汁" = "Double tap to squeeze a cup of lemon juice";
+"一定點擊次數內有25%到75%機率被偷走25%到75%擁有檸檬汁" = "Within certain clicks\n 25% to 75% chance\n of losing 25% to 75%\n of your lemon juice";
