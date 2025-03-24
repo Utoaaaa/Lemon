@@ -21,7 +21,6 @@ class LemonViewModel: ObservableObject {
     init() {
         loadStats()
         setupHaptics()
-        setupAudio()
         checkAndUpdateDate()
     }
     
@@ -159,34 +158,6 @@ class LemonViewModel: ObservableObject {
             saveDailyActivity(for: today)
             saveStats()
         }
-    }
-    
-    // MARK: - 音效和震動
-    
-    private func setupAudio() {
-        guard let soundURL = Bundle.main.url(forResource: "pop sound", withExtension: "mp3") else {
-            print("無法找到音效文件")
-            return
-        }
-        
-        do {
-            // 使用最簡單的音頻配置
-            try AVAudioSession.sharedInstance().setCategory(.ambient)
-            
-            // 初始化音頻播放器
-            audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
-            audioPlayer?.prepareToPlay()
-        } catch {
-            print("音效初始化失敗: \(error.localizedDescription)")
-        }
-    }
-    
-    private func playPopSound() {
-        audioPlayer?.play()
-    }
-    
-    deinit {
-        audioPlayer?.stop()
     }
     
     private func setupHaptics() {

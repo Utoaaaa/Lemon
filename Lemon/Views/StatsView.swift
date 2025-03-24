@@ -2,6 +2,7 @@ import SwiftUI
 
 struct StatsView: View {
     @ObservedObject var viewModel: LemonViewModel
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         ZStack {
@@ -14,6 +15,7 @@ struct StatsView: View {
             VStack(spacing: 30) {
                 Text("統計數據")
                     .font(.system(size: 25, weight: .bold))
+                    .foregroundColor(.black)
                     .padding(.top, hasNotch() ? 90 : 120)
                     .padding(.leading, 20)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -26,7 +28,8 @@ struct StatsView: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                             .fixedSize(horizontal: false, vertical: true)
-                        Text("連續榨檸檬（天）")
+                            .foregroundColor(.black)
+                        Text("連續被偷（天）")
                             .font(.system(size: 16))
                             .foregroundColor(.orange)
                             .lineLimit(1)
@@ -53,6 +56,7 @@ struct StatsView: View {
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
                                 .fixedSize(horizontal: false, vertical: true)
+                                .foregroundColor(.black)
                             Text("總共榨檸檬（杯）")
                                 .font(.system(size: 16))
                                 .foregroundColor(.orange)
@@ -73,6 +77,7 @@ struct StatsView: View {
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
                                 .fixedSize(horizontal: false, vertical: true)
+                                .foregroundColor(.black)
                             Text("總共被偷（杯）")
                                 .font(.system(size: 16))
                                 .foregroundColor(.orange)
@@ -122,6 +127,7 @@ struct ActivityGridView: View {
     @State private var selectedColorInfo: Int = 0
     @State private var firstRecordWeekday: Int = 0  // 第一次記錄的星期幾
     @State private var totalDays: Int = 0          // 記錄總天數
+    @Environment(\.colorScheme) private var colorScheme
     private let extraColumns = 26                   // 預設多生成一年的空格子
     
     // 計算需要的列數
@@ -334,6 +340,7 @@ struct ActivityGridView: View {
                     Text(formatDate(selectedDayInfo.date))
                         .font(.system(size: 12, weight: .bold))
                         .lineLimit(1)
+                        .foregroundColor(.black)
                     
                     HStack {
                         Text(String(format: NSLocalizedString("被偷：%d 杯", comment: ""), selectedDayInfo.stolen))
@@ -359,6 +366,7 @@ struct ActivityGridView: View {
                     Text(getCountRangeText(for: selectedColorInfo))
                         .font(.system(size: 12, weight: .bold))
                         .lineLimit(1)
+                        .foregroundColor(.black)
                 }
                 .padding(8)
                 .frame(maxWidth: .infinity, alignment: .leading)

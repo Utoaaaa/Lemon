@@ -1,11 +1,13 @@
 import SwiftUI
-import AVFoundation
 
 // 添加檢測瀏海的工具
 extension View {
     func hasNotch() -> Bool {
-        let keyWindow = UIApplication.shared.windows.filter { $0.isKeyWindow }.first
-        return keyWindow?.safeAreaInsets.top ?? 0 > 20
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else {
+            return false
+        }
+        return window.safeAreaInsets.top > 20
     }
 }
 
@@ -17,14 +19,17 @@ struct LemonView: View {
     @State private var fallingLemons: [(id: UUID, yOffset: CGFloat, xOffset: CGFloat, finalYOffset: CGFloat, opacity: Double)] = []
     @State private var showLemonTip = false
     @State private var showStolenTip = false
-    @AppStorage("soundEnabled") private var soundEnabled = true
     @AppStorage("vibrationEnabled") private var vibrationEnabled = true
     @AppStorage("fallingAnimationEnabled") private var fallingAnimationEnabled = true
+    @Environment(\.colorScheme) private var colorScheme
     
-    private let soundPlayer = try? AVAudioPlayer(contentsOf: Bundle.main.url(forResource: "pop sound", withExtension: "mp3")!)
     private let screenHeight = UIScreen.main.bounds.height
     private let lemonSize: CGFloat = 30
     private let maxStackHeight: CGFloat = UIScreen.main.bounds.height * 0.6
+    
+    init(viewModel: LemonViewModel) {
+        self.viewModel = viewModel
+    }
     
     var body: some View {
         ZStack {
@@ -40,6 +45,7 @@ struct LemonView: View {
                         .font(.system(size: 25, weight: .bold))
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
+                        .foregroundColor(.black)
                     Spacer()
                     Button(action: {
                         showSettings = true
@@ -60,6 +66,7 @@ struct LemonView: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                             .fixedSize(horizontal: false, vertical: true)
+                            .foregroundColor(.black)
                         Text("😀擁有檸檬汁（杯）")
                             .font(.system(size: 14))
                             .foregroundColor(.orange)
@@ -83,6 +90,7 @@ struct LemonView: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                             .fixedSize(horizontal: false, vertical: true)
+                            .foregroundColor(.black)
                         Text("😭今日被偷（杯）")
                             .font(.system(size: 14))
                             .foregroundColor(.orange)
@@ -106,8 +114,10 @@ struct LemonView: View {
                     VStack {
                         Text("檸檬小偷👻來了！")
                             .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
                         Text(String(format: NSLocalizedString("你被偷了%d杯檸檬汁", comment: ""), viewModel.stolenAmount))
                             .font(.system(size: 14))
+                            .foregroundColor(.white)
                     }
                     .padding()
                     .background(Color.black.opacity(0.8))
@@ -159,18 +169,12 @@ struct LemonView: View {
                         .offset(y: -60)
                         .scaleEffect(lemonScale)
                         .onTapGesture {
-                            // 點擊動畫
-                            withAnimation(.spring(response: 0.05, dampingFraction: 0.6)) {
-                                lemonScale = 0.9
+                            // 简化点击动画
+                            withAnimation(.easeOut(duration: 0.1)) {
+                                lemonScale = 0.98
                             }
                             
-                            // 播放音效
-                            if soundEnabled {
-                                soundPlayer?.currentTime = 0
-                                soundPlayer?.play()
-                            }
-                            
-                            // 觸發震動
+                            // 触发震动
                             if vibrationEnabled {
                                 let generator = UIImpactFeedbackGenerator(style: .medium)
                                 generator.impactOccurred()
@@ -185,9 +189,9 @@ struct LemonView: View {
                             }
                             viewModel.handleLemonTap()
                             
-                            // 恢復大小
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                withAnimation(.spring(response: 0.05, dampingFraction: 0.6)) {
+                            // 恢复大小
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                withAnimation(.easeOut(duration: 0.1)) {
                                     lemonScale = 1.0
                                 }
                             }
@@ -201,8 +205,10 @@ struct LemonView: View {
                 VStack {
                     Text("遊戲提示")
                         .font(.headline)
+                        .foregroundColor(.black)
                     Text("點擊兩下可榨一杯檸檬汁")
                         .font(.subheadline)
+                        .foregroundColor(.black)
                 }
                 .padding()
                 .background(Color.white)
@@ -214,9 +220,11 @@ struct LemonView: View {
                 VStack {
                     Text("遊戲提示")
                         .font(.headline)
+                        .foregroundColor(.black)
                     Text("一定點擊次數內有25%到75%機率被偷走25%到75%擁有檸檬汁")
                         .font(.subheadline)
                         .multilineTextAlignment(.center)
+                        .foregroundColor(.black)
                 }
                 .padding()
                 .background(Color.white)
@@ -233,13 +241,13 @@ struct LemonView: View {
         juiceImages = []
         var randomPositions: [(x: CGFloat, y: CGFloat)] = []
         
-        // 先生成所有隨機位置
-        for _ in 0..<5 {
-            let randomX = CGFloat.random(in: -10...10)
-            let randomY = CGFloat.random(in: -10...10)
+        // 减少动画数量，从5个改为3个
+        for _ in 0..<2 {
+            let randomX = CGFloat.random(in: -5...5)  // 减小随机范围
+            let randomY = CGFloat.random(in: -5...5)
             randomPositions.append((x: randomX, y: randomY))
             
-            let randomScale = CGFloat.random(in: 5...7)
+            let randomScale = CGFloat.random(in: 5...6)  // 减小缩放范围
             juiceImages.append((
                 offset: .zero,
                 scale: randomScale,
@@ -247,9 +255,9 @@ struct LemonView: View {
             ))
         }
         
-        // 分開處理動畫
+        // 简化动画
         for i in 0..<juiceImages.count {
-            withAnimation(Animation.easeOut(duration: 0.2).delay(Double(i) * 0.03)) {
+            withAnimation(Animation.easeOut(duration: 0.15).delay(Double(i) * 0.02)) {  // 减少动画时间和延迟
                 juiceImages[i].offset = CGSize(
                     width: randomPositions[i].x,
                     height: randomPositions[i].y
@@ -258,36 +266,42 @@ struct LemonView: View {
             }
         }
         
-        // 清理動畫
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+        // 提前清理动画并切换到 Lemon1 图片
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             juiceImages = []
+            viewModel.lemonState = .full  // 直接切换到 Lemon1 图片
         }
     }
     
     private func addFallingLemon() {
-        // 計算新檸檬的隨機水平位置
-        let xOffset = CGFloat.random(in: -200...200)
+        // 限制同时存在的柠檬数量
+        if fallingLemons.count >= 100 {
+            return
+        }
         
-        // 找到該x位置附近最高的檸檬
-        var highestY = screenHeight * 0.25 // 基礎高度
+        // 计算新柠檬的随机水平位置
+        let xOffset = CGFloat.random(in: -200...200)  // 减小范围
+        
+        // 找到该x位置附近最高的柠檬
+        var highestY = screenHeight * 0.25 // 基础高度
         
         for lemon in fallingLemons {
-            if abs(lemon.xOffset - xOffset) < lemonSize * 0.7 && lemon.opacity > 0.5 { // 只考慮不透明的檸檬
-                let topOfLemon = lemon.finalYOffset - lemonSize * 0.7 // 留一點空間
+            if abs(lemon.xOffset - xOffset) < lemonSize * 0.7 && lemon.opacity > 0.5 {
+                let topOfLemon = lemon.finalYOffset - lemonSize * 0.7
                 if topOfLemon < highestY {
                     highestY = topOfLemon
                 }
             }
         }
         
-        // 確保不超過最大堆疊高度
+        // 确保不超过最大堆叠高度
         if highestY < -maxStackHeight {
-            return // 如果堆得太高就不再添加
+            return
         }
         
         let newLemon = (
             id: UUID(),
-            yOffset: -screenHeight * 0.1, // 起始位置
+            yOffset: -screenHeight * 0.1,
             xOffset: xOffset,
             finalYOffset: highestY,
             opacity: 1.0
@@ -295,50 +309,50 @@ struct LemonView: View {
         
         fallingLemons.append(newLemon)
         
-        // 開始掉落動畫，使用彈跳效果模擬重力
-        withAnimation(.interpolatingSpring(mass: 1.0, stiffness: 100, damping: 10, initialVelocity: 0)) {
+        // 简化动画
+        withAnimation(.easeOut(duration: 0.3)) {  // 使用更简单的动画
             if let index = fallingLemons.firstIndex(where: { $0.id == newLemon.id }) {
                 fallingLemons[index].yOffset = newLemon.finalYOffset
             }
         }
         
-        // 15秒後淡出並移除
-        DispatchQueue.main.asyncAfter(deadline: .now() + 14.5) {
+        // 提前清理动画
+        DispatchQueue.main.asyncAfter(deadline: .now() + 14.0) {
             if let index = fallingLemons.firstIndex(where: { $0.id == newLemon.id }) {
-                withAnimation(.easeOut(duration: 0.5)) {
+                withAnimation(.easeOut(duration: 0.3)) {
                     fallingLemons[index].opacity = 0
                 }
                 
-                // 檢查並更新上方檸檬的位置
+                // 检查并更新上方柠檬的位置
                 updateLemonsAbove(removedLemon: fallingLemons[index])
             }
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 15.0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 14.5) {
             fallingLemons.removeAll { $0.id == newLemon.id }
         }
     }
     
     private func updateLemonsAbove(removedLemon: (id: UUID, yOffset: CGFloat, xOffset: CGFloat, finalYOffset: CGFloat, opacity: Double)) {
-        // 找出所有在被移除檸檬上方的檸檬
+        // 找出所有在被移除柠檬上方的柠檬
         let affectedLemons = fallingLemons.filter { lemon in
-            lemon.opacity > 0.5 && // 只考慮不透明的檸檬
-            abs(lemon.xOffset - removedLemon.xOffset) < lemonSize * 1.2 && // 在水平範圍內
-            lemon.finalYOffset < removedLemon.finalYOffset // 在上方
+            lemon.opacity > 0.5 &&
+            abs(lemon.xOffset - removedLemon.xOffset) < lemonSize * 1.2 &&
+            lemon.finalYOffset < removedLemon.finalYOffset
         }
         
-        // 更新這些檸檬的位置
+        // 更新这些柠檬的位置
         for affectedLemon in affectedLemons {
             if let index = fallingLemons.firstIndex(where: { $0.id == affectedLemon.id }) {
-                // 計算新的最終位置
+                // 计算新的最终位置
                 var newHighestY = screenHeight * 0.25
                 
-                // 檢查下方的檸檬
+                // 检查下方的柠檬
                 for lemon in fallingLemons {
-                    if lemon.opacity > 0.5 && // 只考慮不透明的檸檬
-                       abs(lemon.xOffset - affectedLemon.xOffset) < lemonSize * 0.7 && // 在水平範圍內
-                       lemon.finalYOffset > affectedLemon.finalYOffset && // 在下方
-                       lemon.id != affectedLemon.id { // 不是自己
+                    if lemon.opacity > 0.5 &&
+                       abs(lemon.xOffset - affectedLemon.xOffset) < lemonSize * 0.7 &&
+                       lemon.finalYOffset > affectedLemon.finalYOffset &&
+                       lemon.id != affectedLemon.id {
                         let topOfLemon = lemon.finalYOffset - lemonSize * 0.7
                         if topOfLemon < newHighestY {
                             newHighestY = topOfLemon
@@ -346,8 +360,8 @@ struct LemonView: View {
                     }
                 }
                 
-                // 使用彈跳動畫更新位置
-                withAnimation(.interpolatingSpring(mass: 1.0, stiffness: 100, damping: 10, initialVelocity: 0)) {
+                // 使用更简单的动画
+                withAnimation(.easeOut(duration: 0.3)) {
                     fallingLemons[index].finalYOffset = newHighestY
                     fallingLemons[index].yOffset = newHighestY
                 }
@@ -366,11 +380,11 @@ struct LemonView: View {
 
 struct SettingsView: View {
     @AppStorage("vibrationEnabled") private var vibrationEnabled = true
-    @AppStorage("soundEnabled") private var soundEnabled = true
     @AppStorage("autoSqueezeEnabled") private var autoSqueezeEnabled = false
     @AppStorage("darkModeEnabled") private var darkModeEnabled = false
     @AppStorage("fallingAnimationEnabled") private var fallingAnimationEnabled = true
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         NavigationView {
@@ -384,6 +398,7 @@ struct SettingsView: View {
                     HStack {
                         Text("設定")
                             .font(.title.bold())
+                            .foregroundColor(.black)
                         Spacer()
                         Button(action: {
                             dismiss()
@@ -401,26 +416,29 @@ struct SettingsView: View {
                             .padding()
                             .background(RoundedRectangle(cornerRadius: 15).fill(Color.white.opacity(0.9)))
                             .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
-                        
-                        Toggle("點擊音效", isOn: $soundEnabled)
-                            .padding()
-                            .background(RoundedRectangle(cornerRadius: 15).fill(Color.white.opacity(0.9)))
-                            .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
-                        
+                            .foregroundColor(.black)
+                            .tint(.orange)
+
                         Toggle("掉落效果", isOn: $fallingAnimationEnabled)
                             .padding()
                             .background(RoundedRectangle(cornerRadius: 15).fill(Color.white.opacity(0.9)))
                             .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                            .foregroundColor(.black)
+                            .tint(.orange)
                         
                         Toggle("自動榨檸檬（即將推出）", isOn: $autoSqueezeEnabled)
                             .padding()
                             .background(RoundedRectangle(cornerRadius: 15).fill(Color.white.opacity(0.9)))
                             .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                            .foregroundColor(.black)
+                            .tint(.orange)
                         
                         Toggle("深色模式（即將推出）", isOn: $darkModeEnabled)
                             .padding()
                             .background(RoundedRectangle(cornerRadius: 15).fill(Color.white.opacity(0.9)))
                             .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                            .foregroundColor(.black)
+                            .tint(.orange)
                     }
                     .padding(.horizontal, 30)
                     
@@ -428,6 +446,12 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundColor(.gray)
                         .padding(.top, 30)
+                    
+                    Text(NSLocalizedString("免責聲明本遊戲故事純屬虛構如有雷同那是你想太多", comment: ""))
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .padding(.top, 5)
+                        .multilineTextAlignment(.center)
                     
                     Spacer()
                 }

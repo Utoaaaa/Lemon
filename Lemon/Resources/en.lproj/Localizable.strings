@@ -34,7 +34,7 @@
 // SettingsView
 "設定" = "Settings";
 "震動效果" = "Vibration";
-"點擊音效" = "Sound Effects";
+"點擊音效（需關閉靜音）" = "Sound Effects (Turn off silent mode)";
 "掉落效果" = "Drop Effect";
 "自動榨檸檬（即將推出）" = "Auto Squeeze (Coming Soon)";
 "深色模式（即將推出）" = "Dark Mode (Coming Soon)";
@@ -53,3 +53,6 @@
 "遊戲提示" = "Game Tips";
 "點擊兩下可榨一杯檸檬汁" = "Double tap to squeeze a cup of lemon juice";
 "一定點擊次數內有25%到75%機率被偷走25%到75%擁有檸檬汁" = "Within certain clicks\n 25% to 75% chance\n of losing 25% to 75%\n of your lemon juice";
+
+// Disclaimer
+"免責聲明本遊戲故事純屬虛構如有雷同那是你想太多" = "Disclaimer\n This game is purely fictional\n Any resemblance is just your imagination";
