@@ -9,6 +9,7 @@ class LemonViewModel: ObservableObject {
     @Published var stats: LemonStats = LemonStats.defaultStats()
     @Published var showThiefAlert = false
     @Published var stolenAmount = 0
+    @Published var autoSqueezeEnabled = false
     
     // 音效和震動
     private var audioPlayer: AVAudioPlayer?
@@ -194,4 +195,5 @@ class LemonViewModel: ObservableObject {
         generator.prepare()
         generator.impactOccurred()
     }
+    
 }
