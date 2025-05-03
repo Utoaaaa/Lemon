@@ -88,15 +88,18 @@ class LemonViewModel: ObservableObject {
         let today = calendar.startOfDay(for: Date())
         
         if let lastPlayDate = stats.lastPlayDate.map({ calendar.startOfDay(for: $0) }) {
-            let components = calendar.dateComponents([.day], from: lastPlayDate, to: today)
+            // 嚴格計算實際間隔完整天數（排除當天）
+            let components = calendar.dateComponents([.day], 
+                from: calendar.startOfDay(for: lastPlayDate),
+                to: calendar.startOfDay(for: today))
             
-            if let days = components.day {
+            if let days = components.day, days > 0 {
                 if days == 1 {
-                    // 連續天數+1
+                    // 正確連續：只間隔1天（昨天）
                     stats.consecutiveDays += 1
                     stats.maxConsecutiveDays = max(stats.consecutiveDays, stats.maxConsecutiveDays)
                 } else if days > 1 {
-                    // 重置連續天數
+                    // 間隔超過1天：重置連續天數（保留歷史最大值）
                     stats.consecutiveDays = 0
                 }
                 
