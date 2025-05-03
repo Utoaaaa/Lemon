@@ -89,30 +89,33 @@ class LemonViewModel: ObservableObject {
         
         if let lastPlayDate = stats.lastPlayDate.map({ calendar.startOfDay(for: $0) }) {
             // 嚴格計算實際間隔完整天數（排除當天）
-            let components = calendar.dateComponents([.day], 
-                from: calendar.startOfDay(for: lastPlayDate),
-                to: calendar.startOfDay(for: today))
+            // 嚴格計算自然天數差（包含調試日誌）
+            // 使用更精確的日期比較方式
+            let components = calendar.dateComponents([.hour], from: lastPlayDate, to: today)
+            let hoursSinceLast = abs(components.hour ?? 0)
             
-            if let days = components.day, days > 0 {
-                if days == 1 {
-                    // 正確連續：只間隔1天（昨天）
+            // 如果超過24小時才算新的一天
+            if hoursSinceLast >= 24 {
+                let days = calendar.dateComponents([.day], from: lastPlayDate, to: today).day ?? 0
+                
+                // 嚴格判斷是否為連續天數（昨天）
+                if calendar.isDate(lastPlayDate, inSameDayAs: calendar.date(byAdding: .day, value: -1, to: today)! ) {
                     stats.consecutiveDays += 1
                     stats.maxConsecutiveDays = max(stats.consecutiveDays, stats.maxConsecutiveDays)
+                    print("[DEBUG] 連續天數更新：+1天 → 總計 \(stats.consecutiveDays) 天")
                 } else if days > 1 {
-                    // 間隔超過1天：重置連續天數（保留歷史最大值）
                     stats.consecutiveDays = 0
+                    print("[DEBUG] 重置連續天數，間隔天數：\(days) 天")
                 }
                 
-                if days >= 1 {
-                    // 保存昨天的活動數據
-                    saveDailyActivity(for: lastPlayDate)
-                    
-                    // 重置今日數據
-                    stats.todayLemonCount = 0
-                    stats.todayStolenCount = 0
-                    stats.lastPlayDate = today
-                    saveStats()
-                }
+                // 每日跨天時重置數據
+                print("[DEBUG] 重置今日數據：檸檬 \(stats.todayLemonCount) → 0，被偷 \(stats.todayStolenCount) → 0")
+                stats.todayLemonCount = 0
+                stats.todayStolenCount = 0
+                stats.lastPlayDate = today
+                saveStats()
+            } else {
+                print("[DEBUG] 未滿24小時（\(hoursSinceLast)小時），不重置數據")
             }
         } else {
             // 首次使用，設置今天為最後遊玩日期
@@ -193,10 +196,15 @@ class LemonViewModel: ObservableObject {
     
     private func triggerHapticFeedback() {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
+        // 直接從 UserDefaults 獲取最新設定值
+        guard UserDefaults.standard.bool(forKey: "hapticsEnabled") else { return }
         
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.prepare()
-        generator.impactOccurred()
+        // 確保在主線程執行
+        DispatchQueue.main.async {
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.prepare()
+            generator.impactOccurred()
+        }
     }
     
 }

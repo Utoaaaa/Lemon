@@ -19,8 +19,8 @@ struct LemonView: View {
     @State private var fallingLemons: [(id: UUID, yOffset: CGFloat, xOffset: CGFloat, finalYOffset: CGFloat, opacity: Double)] = []
     @State private var showLemonTip = false
     @State private var showStolenTip = false
-    @AppStorage("vibrationEnabled") private var vibrationEnabled = true
     @AppStorage("fallingAnimationEnabled") private var fallingAnimationEnabled = true
+    // 完全移除 vibrationEnabled 的宣告
     private var autoSqueezeEnabled: Binding<Bool> {
         Binding(
             get: { viewModel.autoSqueezeEnabled },
@@ -188,9 +188,10 @@ struct LemonView: View {
                                 lemonScale = 0.98
                             }
                             
-                            // 触发震动
-                            if vibrationEnabled {
+                            // 触发震动（使用统一设定）
+                            if UserDefaults.standard.bool(forKey: "hapticsEnabled") {
                                 let generator = UIImpactFeedbackGenerator(style: .heavy)
+                                generator.prepare()
                                 generator.impactOccurred()
                             }
 
@@ -198,7 +199,7 @@ struct LemonView: View {
                                 createJuiceImages()
                             }
                             
-                            if fallingAnimationEnabled {    
+                            if UserDefaults.standard.bool(forKey: "fallingAnimationEnabled") {
                                 addFallingLemon()
                             }
                             viewModel.handleLemonTap()
@@ -268,9 +269,10 @@ struct LemonView: View {
                 lemonScale = 0.98
             }
             
-            // 觸發震動
-            if vibrationEnabled {
+            // 觸發震動（直接讀取UserDefaults）
+            if UserDefaults.standard.bool(forKey: "hapticsEnabled") {
                 let generator = UIImpactFeedbackGenerator(style: .medium)
+                generator.prepare()
                 generator.impactOccurred()
             }
             
@@ -278,7 +280,7 @@ struct LemonView: View {
                 createJuiceImages()
             }
             
-            if fallingAnimationEnabled {    
+            if UserDefaults.standard.bool(forKey: "fallingAnimationEnabled") {
                 addFallingLemon()
             }
             

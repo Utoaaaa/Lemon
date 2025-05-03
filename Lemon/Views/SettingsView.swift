@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @AppStorage("vibrationEnabled") private var vibrationEnabled = true
+    // 移除舊的震動設定
     @Binding var autoSqueezeEnabled: Bool
     @AppStorage("fallingAnimationEnabled") private var fallingAnimationEnabled = true
     
@@ -37,7 +37,10 @@ struct SettingsView: View {
                     .padding(.horizontal, 30)
                     
                     VStack(spacing: 15) {
-                        Toggle("震動效果", isOn: $vibrationEnabled)
+                        Toggle("震動效果", isOn: Binding(
+                            get: { UserDefaults.standard.bool(forKey: "hapticsEnabled") },
+                            set: { UserDefaults.standard.set($0, forKey: "hapticsEnabled") }
+                        ))
                             .padding()
                             .background(RoundedRectangle(cornerRadius: 15).fill(Color.white.opacity(0.9)))
                             .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
